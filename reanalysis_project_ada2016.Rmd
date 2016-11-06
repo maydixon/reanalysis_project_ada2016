@@ -6,10 +6,58 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	comment = "##",
+	prompt = TRUE,
+	tidy = TRUE,
+	tidy.opts = list(width.cutoff = 75),
+	fig.path = "img/"
+)
 ```
 
-## Reanalysis project
+## Reanalysis of: Antiphonal calling allows  individual discrimination in white-winged vampire bats
+#### Carter, G. G., Skowronski, M. D., Faure, P. A., and Fenton, B. 2008 Animal Behaviour. 76:4, 1343-1355
 
-Gerry Carter et al, 2008
+     This study investigated the function of social calls in  white-winged vampire bats. Bat social calls have complex acoustic structures, which are capable of carrying a lot of information, as well as inter-indivual variation that could contribute in individual recognition. The function of these calls in white-winged vampire bats, a highly social species, was unknown. This study tested several aspects of these social calls: 1) whether calls elicit antiphonal responses,2) whether there is consistent individual variation in call structure, and 3) whether bats discriminate between the calls of individuals. For my analysis I am going to look especially at the third component, individual discimination. 
+     The authors used a habituation-discrimination paradigm for this task. This paradigm is widely used in psychology, and is a powerful tool for testing individual discrimination, not least because it requires no training. The basic test is as follows: The goal is to test whether animals discriminate between any two stimuli (say stim A and stim B). You present an animal repeatedly to stim A until the animal habituates to it, as demonstrated by a decline in response to the stimulus. Then, you change the stimulus to stim B. Since habituation is stimulus specific, if an animal discriminates between stim A and stim B, then it will not be habituated to stim B, and it will respond to it at the initial level. If it does not discriminate, then it will continue its habituated response. If the animal has a low baseline response level to stim B, though, there may be no difference between that and the habituated response to A. Howoever, if you present the first stimulus again, if it discriminated between stim A and B, then hearing stim B should have dishabituated the animal to stim A. If you offer stim A again, it should respond to it more than it did at the end of habituation.  Finally you offer the first stimulus again. 
+```{r}
+#import bat data
+gc_bat <- read.delim("https://raw.githubusercontent.com/maydixon/reanalysis_project_ada2016/master/gc_data_by_bat.txt", header= TRUE, sep="\t")
+head(gc_data_by_bat)
+
+#import sequence data
+gc_seq<- read.delim("https://raw.githubusercontent.com/maydixon/reanalysis_project_ada2016/master/gc_data_by_sequence.txt", header= TRUE, sep="\t")
+head(gc_data_by_seq)
+
+
+# can I use parametric things?
+library(reshape2)
+library(ggplot2)
+ggplot(melt(gc_bat), mapping=aes(x=value)) +
+             geom_histogram(bins=5) +
+             facet_wrap(~variable,scales='free_x')
+```
+
+
+Okay, so pretty clearly non-parametic. 
+
+
+
+So,  I would like to:
+#1- see if there is a decrease from the first to third habituation thing (using non-parametric anova, i suppose)
+#2- plot that
+
+#3, see if there is a difference beween last habituation, test, and post test
+#do post-hoc comparisons
+#plot that
+
+
+
+
+
+
+```
 
