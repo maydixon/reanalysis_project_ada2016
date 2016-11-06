@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-{r setup, include=FALSE}
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -21,18 +20,53 @@ knitr::opts_chunk$set(
 ## Reanalysis of: Antiphonal calling allows  individual discrimination in white-winged vampire bats
 #### Carter, G. G., Skowronski, M. D., Faure, P. A., and Fenton, B. 2008 Animal Behaviour. 76:4, 1343-1355
 
-     This study investigated the function of social calls in  white-winged vampire bats. Bat social calls have complex acoustic structures, which are capable of carrying a lot of information, as well as inter-indivual variation that could contribute in individual recognition. The function of these calls in white-winged vampire bats, a highly social species, was unknown. This study tested several aspects of these social calls: 1) whether calls elicit antiphonal responses,2) whether there is consistent individual variation in call structure, and 3) whether bats discriminate between the calls of individuals. For my analysis I am going to look especially at the third component, individual discimination. 
-     The authors used a habituation-discrimination paradigm for this task. This paradigm is widely used in psychology, and is a powerful tool for testing individual discrimination, not least because it requires no training. The basic test is as follows: The goal is to test whether animals discriminate between any two stimuli (say stim A and stim B). You present an animal repeatedly to stim A until the animal habituates to it, as demonstrated by a decline in response to the stimulus. Then, you change the stimulus to stim B. Since habituation is stimulus specific, if an animal discriminates between stim A and stim B, then it will not be habituated to stim B, and it will respond to it at the initial level. If it does not discriminate, then it will continue its habituated response. If the animal has a low baseline response level to stim B, though, there may be no difference between that and the habituated response to A. Howoever, if you present the first stimulus again, if it discriminated between stim A and B, then hearing stim B should have dishabituated the animal to stim A. If you offer stim A again, it should respond to it more than it did at the end of habituation.  Finally you offer the first stimulus again. 
-```{r}
+####Study background
+This study investigated the function of social calls in  white-winged vampire bats. Bat social calls have complex acoustic structures, which are capable of carrying a lot of information, as well as inter-indivual variation that could contribute in individual recognition. The function of these calls in white-winged vampire bats, a highly social species, was unknown. This study tested several aspects of these social calls: 1) whether calls elicit antiphonal responses,2) whether there is consistent individual variation in call structure, and 3) whether bats discriminate between the calls of individuals. For my analysis I am going to look especially at the third component, individual discimination. 
+     
+####The habituation-discrimination test
+The authors used a habituation-discrimination (also called habituation-dishabituation) paradigm for this task. This paradigm is widely used in psychology, and is a powerful tool for testing individual discrimination, not least because it requires no training. The basic test is as follows: The goal is to test whether animals discriminate between any two stimuli (say "stim A" and "stim B"). You present an animal repeatedly with stim A until the animal habituates to it, as demonstrated by a decline in response to the stimulus. Then, you change the stimulus to stim B. If it does not discriminate, then it will continue its habituated response. However, since habituation is stimulus specific, if an animal discriminates between stim A and stim B, then it will not be habituated to stim B, and it will respond to it at the initial level. You may be able to detect a difference in th rate of response.   If the animal has a low baseline response level to stim B, though, there may be no difference between that and the habituated response to A. You can overcome this by presenting the first stimulus again. If it discriminated between stim A and B, then hearing stim B should have dishabituated the animal to stim A. If you offer stim A again, it should respond to it more than it did at the end of habituation. 
+     
+#### Experimental methods    
+
+So, the authors investigated whether bats discriminated between the social calls of different individuals. To do this, they put bats alone in a small enclosure. They respeatedly presented social calls from one individual bats, for  30 to 90 seconds, then changed the stimulus to the social call of another individual for 10 seconds, and finally presented the first stimulus for 10 more seconds. They measured 2 general responses 1) The number of antiphonal vocal calls produced in response to each experimental call, and 2) physical responses to each call, including either physical orientation towards the speaker, or startling from an eyes-closed position in response to the call. 
+     
+The experimenters organized the data in two ways, reponses by bat, and by sequence. Each bat received a number of different trials with different experimental sequences from different bats, so the experimenters reported the mean responses by bat. Each stimulus sequeance was also used more than once, so they also analyzed the data by sequence. These two different levels dive you different degrees of freedom (xxx in the former and xxxx in the latter). 
+
+These are the column names, and what they mean:
+
+For the by bat data:
+```{r, echo=FALSE}
 #import bat data
 gc_bat <- read.delim("https://raw.githubusercontent.com/maydixon/reanalysis_project_ada2016/master/gc_data_by_bat.txt", header= TRUE, sep="\t")
-head(gc_data_by_bat)
-
+head(gc_bat)
+```
+For the by sequence data:
+```{r, echo=FALSE}
 #import sequence data
 gc_seq<- read.delim("https://raw.githubusercontent.com/maydixon/reanalysis_project_ada2016/master/gc_data_by_sequence.txt", header= TRUE, sep="\t")
-head(gc_data_by_seq)
+head(gc_seq)
+```
+Basic column names (by sequence columns are the same, but end with ".p" ) :
+```{r, echo=FALSE}
+gc_bat_cols <- colnames(gc_bat)
+gc_bat_cols
+```
+subject = bat ID  
+vocal.first = the average number of calls the bat made in the first 10 seconds of habituation  
+vocal.mid = the average number of calls the bat made in the middle 10 seconds of habituation  
+vocal.last = the average number of calls the bat made in the final 10 seconds of habituation  
+vocal.test = the average number of calls made during the 10 seconds of the new stimulus  
+vocal.post = the average number of calls in the first 10 seconds when the first stimulus returned   
+vocal.last.post = the average number of calls in the last 10 seconds when the first stimulus returned   
+visual.first = the average number of physical responses the bat made in the first 10 seconds of habituation  
+visual.mid = the average number of physical responses the bat made in the middle 10 seconds of habituation  
+visual.last = the average number of physical responses the bat made in the final 10 seconds of habituation  
+visual.test = the average number of physical responses made during the 10 seconds of the new stimulus  
+visual.post = the average number of physical responses in the first 10 seconds when the first stimulus returned   
+visual.last.post = the average number of physical responses in the last 10 seconds when the first stimulus returned   
 
 
+```{r}
 # can I use parametric things?
 library(reshape2)
 library(ggplot2)
@@ -41,10 +75,26 @@ ggplot(melt(gc_bat), mapping=aes(x=value)) +
              facet_wrap(~variable,scales='free_x')
 ```
 
+```{r, echo=FALSE}
+#restructuing the dataframe
+gc_bat_m<-melt(gc_bat)
+head(gc_bat_m)
+#subset by visual and vocal
+bat_m_vis<-gc_bat_m[grep("visual",gc_bat_m$variable),]
+unique(bat_m_vis$variable)
+bat_m_voc<-gc_bat_m[grep("vocal",gc_bat_m$variable),]
+unique(bat_m_voc$variable)
 
-Okay, so pretty clearly non-parametic. 
+#plot visual data
+p<- ggplot(data=bat_m_vis, aes(x=variable, y=value))
+p<- p + geom_boxplot()
+p<- p + 
+#plot vocal data
+      
+G. Carter used Wilcoxin sign- rank test
 
-
+```{r, echo=FALSE}
+g
 
 So,  I would like to:
 #1- see if there is a decrease from the first to third habituation thing (using non-parametric anova, i suppose)
