@@ -1,0 +1,15 @@
+---
+title: "Reanalysis project"
+author: "May Dixon"
+date: "November 5, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reanalysis project
+
+Gerry Carter et al, 2008
+
