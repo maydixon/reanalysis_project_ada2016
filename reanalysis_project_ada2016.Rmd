@@ -65,13 +65,13 @@ visual.test = the average number of physical responses made during the 10 second
 visual.post = the average number of physical responses in the first 10 seconds when the first stimulus returned   
 visual.last.post = the averaged number of physical responses for visual.last and visual.post   
 
-#### Description of analyses run by Carter et al.:
+#### Description of analyses run by Carter et al.
 Carter et al. must have determined that the data were decidedly non-normal, because they used non-parametric tests. They used Wilcoxon signed-rank tests to test whether the vocal and physical response to Stim A 10 before and after Stim B were significantly greater than the responses during Stim B. They repeated this analysis with the sequences as the base unit and with the bat subjects as the base unit. They also used a Wilcoxon signed-rank test to see whether the initial responses to Stim A were significantly different than the initial responses to Stim B (though all stimulus sequences were used as both Stim A and Stim B)
 
 #### Description of reanalysis run by me:
 I tested for normality, and ran all the Wilcoxon tests run by Carter et al. I also ran the Wilcoxon test for discrimination slightly differently, comparing only the response to the last 10s of Stim A to the response to Stim B.  I also ran a Friedman test to see whether bats actually did habituate to Stim A. All the tests for the bat-level data are shown, and then are repeated for the sequence level data underneath. 
 
-## Analyses of Bat-level data
+### Analyses of Bat-level data:
 #### Exploratory stats
 
 Are these data appropriate for parametric stats?
@@ -264,9 +264,11 @@ friedman.test(value~variable |subject, data=bat_m_voc_habit)
 So, this test found that we can reject the null that all the variables came from the same distribution-- the bats habituated (decreased their response after the first 10s of playback) 
 
 I can run post-hocs to see which were different in particular. This is a function created by a user of R, "David Winsemius", see credit in code. 
-```{r, echo=FALSE}
-library(coin)
-
+```{r, echo=FALSE, include=FALSE}
+#I took out the package install help and the plotting help
+require(coin)
+require(multcomp)
+require(colorspace)
 friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.post.hoc.if.signif = T,  to.plot.parallel = T, to.plot.boxplot = T, signif.P = .05, color.blocks.in.cor.plot = T, jitter.Y.in.cor.plot =F)
 {
       # formu is a formula of the shape: 	Y ~ X | block
@@ -274,28 +276,6 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
       
       # Note: This function doesn't handle NA's! In case of NA in Y in one of the blocks, then that entire block should be removed.
       
-      
-      # Loading needed packages
-      if(!require(coin))
-      {
-            print("You are missing the package 'coin', we will now try to install it...")
-            install.packages("coin")
-            library(coin)
-      }
-      
-      if(!require(multcomp))
-      {
-            print("You are missing the package 'multcomp', we will now try to install it...")
-            install.packages("multcomp")
-            library(multcomp)
-      }
-      
-      if(!require(colorspace))
-      {
-            print("You are missing the package 'colorspace', we will now try to install it...")
-            install.packages("colorspace")
-            library(colorspace)
-      }
       
       
       # get the names out of the formula
@@ -334,72 +314,7 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
                   The.post.hoc.P.values <- pvalue(the.sym.test, method = "single-step")	# this is the post hoc of the friedman test
                   
                   
-                  # plotting
-                  if(to.plot.parallel & to.plot.boxplot)	par(mfrow = c(1,2)) # if we are plotting two plots, let's make sure we'll be able to see both
                   
-                  if(to.plot.parallel)
-                  {
-                        X.names <- levels(data[, X.name])
-                        X.for.plot <- seq_along(X.names)
-                        plot.xlim <- c(.7 , length(X.for.plot)+.3)	# adding some spacing from both sides of the plot
-                        
-                        if(color.blocks.in.cor.plot)
-                        {
-                              blocks.col <- rainbow_hcl(length(levels(data[,block.name])))
-                        } else {
-                              blocks.col <- 1 # black
-                        }
-                        
-                        data2 <- data
-                        if(jitter.Y.in.cor.plot) {
-                              data2[,Y.name] <- jitter(data2[,Y.name])
-                              par.cor.plot.text <- "Parallel coordinates plot (with Jitter)"
-                        } else {
-                              par.cor.plot.text <- "Parallel coordinates plot"
-                        }
-                        
-                        # adding a Parallel coordinates plot
-                        matplot(as.matrix(reshape(data2,  idvar=X.name, timevar=block.name,
-                                                  direction="wide")[,-1])  ,
-                                type = "l",  lty = 1, axes = FALSE, ylab = Y.name,
-                                xlim = plot.xlim,
-                                col = blocks.col,
-                                main = par.cor.plot.text)
-                        axis(1, at = X.for.plot , labels = X.names) # plot X axis
-                        axis(2) # plot Y axis
-                        points(tapply(data[,Y.name], data[,X.name], median) ~ X.for.plot, col = "red",pch = 4, cex = 2, lwd = 5)
-                  }
-                  
-                  if(to.plot.boxplot)
-                  {
-                        # first we create a function to create a new Y, by substracting different combinations of X levels from each other.
-                        subtract.a.from.b <- function(a.b , the.data)
-                        {
-                              the.data[,a.b[2]] - the.data[,a.b[1]]
-                        }
-                        
-                        temp.wide <- reshape(data,  idvar=X.name, timevar=block.name,
-                                             direction="wide") 	#[,-1]
-                        wide.data <- as.matrix(t(temp.wide[,-1]))
-                        colnames(wide.data) <- temp.wide[,1]
-                        
-                        Y.b.minus.a.combos <- apply(with(data,combn(levels(data[,X.name]), 2)), 2, subtract.a.from.b, the.data =wide.data)
-                        names.b.minus.a.combos <- apply(with(data,combn(levels(data[,X.name]), 2)), 2, function(a.b) {paste(a.b[2],a.b[1],sep=" - ")})
-                        
-                        the.ylim <- range(Y.b.minus.a.combos)
-                        the.ylim[2] <- the.ylim[2] + max(sd(Y.b.minus.a.combos))	# adding some space for the labels
-                        is.signif.color <- ifelse(The.post.hoc.P.values < .05 , "green", "grey")
-                        
-                        boxplot(Y.b.minus.a.combos,
-                                names = names.b.minus.a.combos ,
-                                col = is.signif.color,
-                                main = "Boxplots (of the differences)",
-                                ylim = the.ylim
-                        )
-                        legend("topright", legend = paste(names.b.minus.a.combos, rep(" ; PostHoc P.value:", number.of.X.levels),round(The.post.hoc.P.values,5)) , fill =  is.signif.color )
-                        abline(h = 0, col = "blue")
-                        
-                  }
                   
                   list.to.return <- list(Friedman.Test = the.sym.test, PostHoc.Test = The.post.hoc.P.values)
                   if(to.print.friedman) {print(list.to.return)}
@@ -414,13 +329,17 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
       # Original credit (for linking online, to the package that performs the post hoc test) goes to "David Winsemius", see:
       # http://tolstoy.newcastle.edu.au/R/e8/help/09/10/1416.html
 }
-
 ######
+```
 
-Running these post.hocs:
+```{r}
+
+#Running these post.hocs:
 friedman.test.with.post.hoc(value~variable |subject, data=bat_m_voc_habit, to.plot.parallel = F, to.plot.boxplot = F, signif.P = .05, color.blocks.in.cor.plot = F, jitter.Y.in.cor.plot =F)
 ```
+
 This shows that the response to the first 10 seconds of calls is signigicantly different from that of the middle and last 10s, but there is no difference between the middle and last sections (mostly because of floor effects). The P-values of the 2 Friedman tests are slightly different, possibly because of differences in how the data were ranked. 
+
 #### Friedman test of visual responses:
 ```{r}
 #select only visual habituation responses:
@@ -446,6 +365,7 @@ wilcox.test(gc_bat$vocal.last, gc_bat$vocal.test, alternative = "less", paired=T
 
 ```
 So, bats called significantly more to the new bat calls  than they did to the habituated bat calls. (p=0.1125)
+
 #### Visual response
 ```{r, echo=FALSE}
 wilcox.test(gc_bat$visual.last, gc_bat$visual.test, alternative = "less", paired=TRUE)
@@ -474,6 +394,7 @@ ggplot(melt(gc_seq), mapping=aes(x=value)) +
              geom_histogram(bins=20) +
              facet_wrap(~variable,scales='free_x')
 ```
+
 Data are diffuse and non-normal, will have to use non-parametric stats 
 
 
@@ -607,7 +528,7 @@ This result is consistent with that of G.Carter et al.
 In all, our results were similar to that of G. Carter, though none of our P-values were exact matches. In two cases, our reanalysis pushed a comparison above the alpha value : 1) The visual response to the test stimulus when compared to an average ofthe 10 seconds before and after (us: P = 0.07442 , G.C.: P= 0.016), and 2)  the initial vocal responses to the habituating and test stimulus (us:p-value = 0.05191, G.C.: p=0.047). But overall, the interpretation of these data are the same: **There is evidence that white-winged vampire bats can individually identify other vampire bats by the sound of their social calls alone.**
 
 
-  ####**Y Fin**
+##*Y Fin*
 
 
 
