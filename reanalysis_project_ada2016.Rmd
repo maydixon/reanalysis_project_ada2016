@@ -130,6 +130,11 @@ p
 ```
 The columns are colored by the stimulus type used. The dark teal columns are all from the habituating bat, and the green column is the response to the test bat. 
 
+This is the corresponding chart in Carter et al.:
+
+<img src="img/GC_Fig4.png" width="200px"/>
+
+Where you replace imagename.filetype with the name of your file, e.g., "figure-1.jpeg" and ### with a integer number of pixels, e.g., width="200px"
 
 #####Carter et al. Averaged the response right before and right after the test calls, and compared that to the response during the test calls. This is a conservative approach (see text). This is what this looks like, using non-parametric stats: wilcoxon-signed rank test (because variables are not independent, but rather matched):
 
