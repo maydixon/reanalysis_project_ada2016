@@ -30,7 +30,7 @@ The authors used a habituation-discrimination (also called habituation-dishabitu
 
 So, the authors investigated whether bats discriminated between the social calls of different individuals. To do this, they put bats alone in a small enclosure. They respeatedly presented social calls from one individual bats, for  30 to 90 seconds, then changed the stimulus to the social call of another individual for 10 seconds, and finally presented the first stimulus for 10 more seconds. They measured 2 general responses 1) The number of antiphonal vocal calls produced in response to each experimental call, and 2) physical responses to each call, including either physical orientation towards the speaker, or startling from an eyes-closed position in response to the call. 
      
-The experimenters organized the data in two ways, reponses by bat, and by sequence. Each bat received a number of different trials with different experimental sequences from different bats, so the experimenters reported the mean responses by bat. Each stimulus sequeance was also used more than once, so they also analyzed the data by sequence. These two different levels dive you different degrees of freedom (xxx in the former and xxxx in the latter). 
+The experimenters organized the data in two ways, reponses by bat, and by sequence. Each bat received a number of different trials with different experimental sequences, so the experimenters reported the mean responses by bat. Each stimulus sequence was also used more than once, so they also analyzed the data by sequence. These two different levels dive you different degrees of freedom (7 d.f. in the former and 15 in the latter). 
 
 These are the column names, and what they mean:
 
@@ -71,43 +71,264 @@ visual.last.post = the average number of physical responses in the last 10 secon
 library(reshape2)
 library(ggplot2)
 ggplot(melt(gc_bat), mapping=aes(x=value)) +
-             geom_histogram(bins=5) +
+             geom_histogram(bins=20) +
              facet_wrap(~variable,scales='free_x')
 ```
+So, it seems clear that there are too few cases, and they are no where close to normal, to use parametric statistics. 
+
+This bat, "Kristina"", is also a bit of an outlier:
+gc_bat[grep("kristina", gc_bat$subject),]
 
 ```{r, echo=FALSE}
-#restructuing the dataframe
+#restructuring the dataframe
 gc_bat_m<-melt(gc_bat)
-head(gc_bat_m)
 #subset by visual and vocal
-bat_m_vis<-gc_bat_m[grep("visual",gc_bat_m$variable),]
-unique(bat_m_vis$variable)
-bat_m_voc<-gc_bat_m[grep("vocal",gc_bat_m$variable),]
-unique(bat_m_voc$variable)
+bat_m_vis<-gc_bat_m[grep("visual",gc_bat_m$variable),] #visual
 
-#plot visual data
+bat_m_vis$variable <- factor(bat_m_vis$variable) #necessary to remove old levels from factor (threw an error before)
+levels(bat_m_vis$variable)
+
+bat_m_voc<-gc_bat_m[grep("vocal",gc_bat_m$variable),] #vocal
+bat_m_voc$variable <- factor(bat_m_voc$variable)
+levels(bat_m_voc$variable)
+
+```
+
+
+####Visualizing the visual response data:
+```{r, echo=FALSE}
 p<- ggplot(data=bat_m_vis, aes(x=variable, y=value))
-p<- p + geom_boxplot()
-p<- p + 
-#plot vocal data
-      
-G. Carter used Wilcoxin sign- rank test
+p<- p + geom_boxplot(aes(fill=factor(variable)))
+p<- p + guides(fill=FALSE)
+p<- p + scale_x_discrete( breaks = c("visual.first", "visual.mid", "visual.last", "visual.test", "visual.post", "visual.last.post")) +
+                              scale_fill_manual( values=c("darkorange2", "darkorange2","darkorange2","darkred","darkorange2", "darkorange2"  ))
+p<- p + labs(x="Stage of playback", y="# of physical responses produced in 10s of playback", title="Physical responses to playback")
+p
+```
+
+####Visualizing the vocal response data
 
 ```{r, echo=FALSE}
-g
 
-So,  I would like to:
-#1- see if there is a decrease from the first to third habituation thing (using non-parametric anova, i suppose)
-#2- plot that
+p<- ggplot(data=bat_m_voc, aes(x=variable, y=value))
+p<- p + geom_boxplot(aes(fill=factor(variable)))
+p<- p + guides(fill=FALSE)
+p<- p + scale_x_discrete( breaks = c("vocal.first", "vocal.mid", "vocal.last", "vocal.test", "vocal.post", "vocal.last.post")) +
+                              scale_fill_manual( values=c("darkslategray4", "darkslategray4","darkslategray4","darkseagreen4","darkslategray4", "darkslategray4"  ))
+p<- p + labs(x="Stage of playback", y="# of calls produced in 10s of playback", title="Vocal responses to playback")
+p      
+```
 
-#3, see if there is a difference beween last habituation, test, and post test
-#do post-hoc comparisons
-#plot that
+Carter et al. Averaged the response right before and right after the test calls, and compared that to the response during the test calls. This is a conservative approach (see text). This is what this looks like, using non-parametric stats: wilcoxon-signed rank test (because variables are not independent, but rather matched)
+
+The bat level vocal response:
+```{r, echo=FALSE}
+#making an average response before and after the test stimulus
+gc_bat$habit_avg_voc <- gc_bat$vocal.last*gc_bat$vocal.post/2
+gc_bat$habit_avg_vis <- gc_bat$visual.last*gc_bat$visual.post/2
+
+median(gc_bat$vocal.test) #median test value
+median(gc_bat$habit_avg_voc) #median before and after
+wilcox.test(gc_bat$vocal.test, gc_bat$habit_avg_voc, paired=TRUE, alternative="greater")
+```
+The bat level visual response:
+```{r, echo=FALSE}
+median(gc_bat$visual.test) #median test value
+median(gc_bat$habit_avg_vis)  #median before and after
+wilcox.test(gc_bat$visual.test, gc_bat$habit_avg_vis, alternative="greater", paired=TRUE)
+
+```
+
+Vocal response: W = 28, p-value = 0.01125 (G.C. found T=14, N=8, P= 0.016)
+Visual response: W = 29, p-value = 0.07442 (G.C. found T=14, P= 0.016)
 
 
+Unclear why these values are different-- they aren't more similar when run unmatched.
+
+###Habituation
+I would like to compare the first three variables to see whether bats show evidence of habituation in response to repeated stimulus presentation.
+
+To do this I will run a friedman test to see whether there is a differenence in the responses to the start, middle, and end of the stimulus playback
 
 
+#### Friedman test of vocal responses:
+```{r}
+#call only the habituation variables:
+bat_m_voc_habit<-bat_m_voc[bat_m_voc$variable == "vocal.first" | bat_m_voc$variable == "vocal.mid" | bat_m_voc$variable == "vocal.last" , ]
+bat_m_voc_habit$variable<- factor(bat_m_voc_habit$variable) #needed to redo levels of factor
+
+#run test
+friedman.test(value~variable |subject, data=bat_m_voc_habit)
+
+```
+So, this test found that we can reject the null that all the variables came from the same distribution-- the bats habituated (decreased their response after the first 10s of playback) 
+#### Friedman test of visual responses:
+```{r}
+#select only visual habituation responses:
+bat_m_vis_habit<-bat_m_vis[bat_m_vis$variable == "visual.first" | bat_m_vis$variable == "visual.mid" | bat_m_vis$variable == "visual.last" , ]
+bat_m_vis_habit$variable<- factor(bat_m_vis_habit$variable) #needed to redo levels of factor
+
+#run test
+friedman.test(value~variable |subject, data=bat_m_vis_habit)
+
+```
+This test did not reject the null that the responses to the variables came from the same distribution. This is somewhat surprising, but probably because of the low power of friedman's tests. 
+
+## Is there a difference between the habituated response and the response to the changed stimulus? 
+####(Do these vampires discriminate?)
+
+Carter et al. averaged responses before and after the stimulus change, but it is more consistent with other literature to just compare the response before the stimulus change to the response during the stimulus change To test this, I need to do a wilcoxon-signed rank test, comparing visual and vocal responses to the last 10s of the first stimulus, and the 10 seconds of the second stimulus
+
+#### Vocal response
+```{r, echo=FALSE}
+wilcox.test(gc_bat$vocal.last, gc_bat$vocal.test, alternative = "less", paired=TRUE)
 
 
 ```
+So, bats called significantly more to the new bat calls  than they did to the habituated bat calls. (p=0.1125)
+#### Visual response
+```{r, echo=FALSE}
+wilcox.test(gc_bat$visual.last, gc_bat$visual.test, alternative = "less", paired=TRUE)
+
+
+```
+Bats also physically responded significantly more to the new bat calls than the habituated ones. (p=0.1125)
+
+Because these are significant, it isn't necessary to compare habituated response to the response when the first stimulus was reintroduced (we already have evidence for discrimination)
+
+
+####You could also do all of the above for the sequence-level data (where mean responses to each sequence were pooled by bat. (d.f.= 15)
+
+
+
+
+
+Are parametric tests an option?
+```{r, echo=FALSE}
+# can I use parametric things?
+
+ggplot(melt(gc_seq), mapping=aes(x=value)) +
+             geom_histogram(bins=20) +
+             facet_wrap(~variable,scales='free_x')
+```
+Data are diffuse and non-normal, will have to use non-parametric stats 
+
+
+
+```{r, echo=FALSE}
+#restructuring the dataframe
+gc_seq_m<-melt(gc_seq)
+#subset by visual and vocal
+seq_m_vis<-gc_seq_m[grep("visual",gc_seq_m$variable),] #visual
+
+seq_m_vis$variable <- factor(seq_m_vis$variable) #necessary to remove old levels from factor (threw an error before)
+levels(seq_m_vis$variable)
+
+seq_m_voc<-gc_seq_m[grep("vocal",gc_seq_m$variable),] #vocal
+seq_m_voc$variable <- factor(seq_m_voc$variable)
+levels(seq_m_voc$variable)
+
+```
+
+
+####Visualizing the visual response data:
+```{r, echo=FALSE}
+p<- ggplot(data=seq_m_vis, aes(x=variable, y=value))
+p<- p + geom_boxplot(aes(fill=factor(variable)))
+p<- p + guides(fill=FALSE)
+p<- p + scale_x_discrete( breaks = c("visual.first", "visual.mid", "visual.last", "visual.test", "visual.post")) +
+                              scale_fill_manual( values=c("darkorange2", "darkorange2","darkorange2","darkred","darkorange2"  ))
+p<- p + labs(x="Stage of playback", y="Average # of physical responses produced in 10s of playback by sequence", title="Physical responses to playback")
+p
+```
+
+####Visualizing the vocal response data
+
+```{r, echo=FALSE}
+
+p<- ggplot(data=seq_m_voc, aes(x=variable, y=value))
+p<- p + geom_boxplot(aes(fill=factor(variable)))
+p<- p + guides(fill=FALSE)
+p<- p + scale_x_discrete( breaks = c("vocal.first", "vocal.mid", "vocal.last", "vocal.test", "vocal.post", "vocal.last.post")) +
+                              scale_fill_manual( values=c("darkslategray4", "darkslategray4","darkslategray4","darkseagreen4","darkslategray4", "darkslategray4"  ))
+p<- p + labs(x="Stage of playback", y="# of calls produced in 10s of playback", title="Vocal responses to playback")
+p      
+```
+
+Carter et al. Averaged the response right before and right after the test calls, and compared that to the response during the test calls. This is a conservative approach (see text). This is what this looks like, using non-parametric stats: wilcoxon-signed rank test (because variables are not independent, but rather matched)
+
+The bat level vocal response:
+```{r, echo=FALSE}
+#making an average response before and after the test stimulus
+gc_seq$habit_avg_voc <- gc_seq$vocal.last*gc_seq$vocal.post/2
+gc_seq$habit_avg_vis <- gc_seq$visual.last*gc_seq$visual.post/2
+
+median(gc_seq$vocal.test) #median test value
+median(gc_seq$habit_avg_voc) #median before and after
+wilcox.test(gc_seq$vocal.test, gc_seq$habit_avg_voc, paired=TRUE, alternative="greater")
+```
+The bat level visual response:
+```{r, echo=FALSE}
+median(gc_seq$visual.test) #median test value
+median(gc_seq$habit_avg_vis)  #median before and after
+wilcox.test(gc_seq$visual.test, gc_seq$habit_avg_vis, alternative="greater", paired=TRUE)
+
+```
+
+Vocal response: W = 28, p-value = 0.01125 (G.C. found T=14, N=8, P= 0.016)
+Visual response: W = 29, p-value = 0.07442 (G.C. found T=14, P= 0.016)
+
+
+Unclear why these values are different-- they aren't more similar when run unmatched.
+
+###Habituation
+I would like to compare the first three variables to see whether bats show evidence of habituation in response to repeated stimulus presentation.
+
+To do this I will run a friedman test to see whether there is a differenence in the responses to the start, middle, and end of the stimulus playback
+
+
+#### Friedman test of vocal responses:
+```{r}
+#call only the habituation variables:
+seq_m_voc_habit<-seq_m_voc[seq_m_voc$variable == "vocal.first" | seq_m_voc$variable == "vocal.mid" | seq_m_voc$variable == "vocal.last" , ]
+seq_m_voc_habit$variable<- factor(seq_m_voc_habit$variable) #needed to redo levels of factor
+
+#run test
+friedman.test(value~variable |subject, data=seq_m_voc_habit)
+
+```
+So, this test found that we can reject the null that all the variables came from the same distribution-- the bats habituated (decreased their response after the first 10s of playback) 
+#### Friedman test of visual responses:
+```{r}
+#select only visual habituation responses:
+seq_m_vis_habit<-seq_m_vis[seq_m_vis$variable == "visual.first" | seq_m_vis$variable == "visual.mid" | seq_m_vis$variable == "visual.last" , ]
+seq_m_vis_habit$variable<- factor(seq_m_vis_habit$variable) #needed to redo levels of factor
+
+#run test
+friedman.test(value~variable |subject, data=seq_m_vis_habit)
+
+```
+This test did not reject the null that the responses to the variables came from the same distribution. This is somewhat surprising, but probably because of the low power of friedman's tests. 
+
+## Is there a difference between the habituated response and the response to the changed stimulus? 
+####(Do these vampires discriminate?)
+
+Carter et al. averaged responses before and after the stimulus change, but it is more consistent with other literature to just compare the response before the stimulus change to the response during the stimulus change To test this, I need to do a wilcoxon-signed rank test, comparing visual and vocal responses to the last 10s of the first stimulus, and the 10 seconds of the second stimulus
+
+#### Vocal response
+```{r, echo=FALSE}
+wilcox.test(gc_seq$vocal.last, gc_seq$vocal.test, alternative = "less", paired=TRUE)
+
+
+```
+So, bats called significantly more to the new bat calls  than they did to the habituated bat calls. (p=0.1125)
+#### Visual response
+```{r, echo=FALSE}
+wilcox.test(gc_seq$visual.last, gc_seq$visual.test, alternative = "less", paired=TRUE)
+
+
+```
+Bats also physically responded significantly more to the new bat calls than the habituated ones. (p=0.1125)
+
+Because these are significant, it isn't necessary to compare habituated response to the response when the first stimulus was reintroduced (we already have evidence for discrimination)
 
