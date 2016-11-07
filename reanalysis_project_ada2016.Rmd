@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-	echo = TRUE,
+	echo = FALSE,
 	warning = FALSE,
 	comment = "##",
 	prompt = TRUE,
@@ -46,7 +46,7 @@ For the by sequence data:
 gc_seq<- read.delim("https://raw.githubusercontent.com/maydixon/reanalysis_project_ada2016/master/gc_data_by_sequence.txt", header= TRUE, sep="\t")
 head(gc_seq)
 ```
-Basic column names (by sequence columns are the same, but end with ".p" ) :
+Basic column names (these are from the data pooled by bat, but columns are named similarly for the data pooled by sequence) :
 ```{r, echo=FALSE}
 gc_bat_cols <- colnames(gc_bat)
 gc_bat_cols
@@ -66,6 +66,10 @@ visual.post = the average number of physical responses in the first 10 seconds w
 visual.last.post = the average number of physical responses in the last 10 seconds when the first stimulus returned   
 
 
+
+#### Exploratory stats
+
+Are these data appropriate for parametric stats?
 ```{r}
 # can I use parametric things?
 library(reshape2)
@@ -74,10 +78,15 @@ ggplot(melt(gc_bat), mapping=aes(x=value)) +
              geom_histogram(bins=20) +
              facet_wrap(~variable,scales='free_x')
 ```
+
 So, it seems clear that there are too few cases, and they are no where close to normal, to use parametric statistics. 
 
-This bat, "Kristina"", is also a bit of an outlier:
+This bat, "Kristina", is also a bit of an outlier:
+```{r}
 gc_bat[grep("kristina", gc_bat$subject),]
+```
+
+####Now let's visualize how bats responded to these treatments: 
 
 ```{r, echo=FALSE}
 #restructuring the dataframe
@@ -86,11 +95,11 @@ gc_bat_m<-melt(gc_bat)
 bat_m_vis<-gc_bat_m[grep("visual",gc_bat_m$variable),] #visual
 
 bat_m_vis$variable <- factor(bat_m_vis$variable) #necessary to remove old levels from factor (threw an error before)
-levels(bat_m_vis$variable)
+
 
 bat_m_voc<-gc_bat_m[grep("vocal",gc_bat_m$variable),] #vocal
 bat_m_voc$variable <- factor(bat_m_voc$variable)
-levels(bat_m_voc$variable)
+
 
 ```
 
@@ -105,6 +114,7 @@ p<- p + scale_x_discrete( breaks = c("visual.first", "visual.mid", "visual.last"
 p<- p + labs(x="Stage of playback", y="# of physical responses produced in 10s of playback", title="Physical responses to playback")
 p
 ```
+The columns are colored by the stimulus type used. The dark red columns are all from the habituating bat, and the orange column is the response to the test bat. 
 
 ####Visualizing the vocal response data
 
@@ -118,22 +128,34 @@ p<- p + scale_x_discrete( breaks = c("vocal.first", "vocal.mid", "vocal.last", "
 p<- p + labs(x="Stage of playback", y="# of calls produced in 10s of playback", title="Vocal responses to playback")
 p      
 ```
+The columns are colored by the stimulus type used. The dark teal columns are all from the habituating bat, and the green column is the response to the test bat. 
 
-Carter et al. Averaged the response right before and right after the test calls, and compared that to the response during the test calls. This is a conservative approach (see text). This is what this looks like, using non-parametric stats: wilcoxon-signed rank test (because variables are not independent, but rather matched)
+
+#####Carter et al. Averaged the response right before and right after the test calls, and compared that to the response during the test calls. This is a conservative approach (see text). This is what this looks like, using non-parametric stats: wilcoxon-signed rank test (because variables are not independent, but rather matched):
 
 The bat level vocal response:
 ```{r, echo=FALSE}
 #making an average response before and after the test stimulus
 gc_bat$habit_avg_voc <- gc_bat$vocal.last*gc_bat$vocal.post/2
 gc_bat$habit_avg_vis <- gc_bat$visual.last*gc_bat$visual.post/2
-
+```
+The median vocal response to the test calls:
+```{r}
 median(gc_bat$vocal.test) #median test value
+```
+The median vocal response to the calls before and after the test response:
+```{r}
 median(gc_bat$habit_avg_voc) #median before and after
 wilcox.test(gc_bat$vocal.test, gc_bat$habit_avg_voc, paired=TRUE, alternative="greater")
 ```
 The bat level visual response:
+
+The median visual response to the calls during the test response:
 ```{r, echo=FALSE}
 median(gc_bat$visual.test) #median test value
+```
+The median visual response to the calls before and after the test response:
+```{r}
 median(gc_bat$habit_avg_vis)  #median before and after
 wilcox.test(gc_bat$visual.test, gc_bat$habit_avg_vis, alternative="greater", paired=TRUE)
 
@@ -197,6 +219,9 @@ Bats also physically responded significantly more to the new bat calls than the 
 Because these are significant, it isn't necessary to compare habituated response to the response when the first stimulus was reintroduced (we already have evidence for discrimination)
 
 
+
+
+
 ####You could also do all of the above for the sequence-level data (where mean responses to each sequence were pooled by bat. (d.f.= 15)
 
 
@@ -249,8 +274,8 @@ p
 p<- ggplot(data=seq_m_voc, aes(x=variable, y=value))
 p<- p + geom_boxplot(aes(fill=factor(variable)))
 p<- p + guides(fill=FALSE)
-p<- p + scale_x_discrete( breaks = c("vocal.first", "vocal.mid", "vocal.last", "vocal.test", "vocal.post", "vocal.last.post")) +
-                              scale_fill_manual( values=c("darkslategray4", "darkslategray4","darkslategray4","darkseagreen4","darkslategray4", "darkslategray4"  ))
+p<- p + scale_x_discrete( breaks = c("vocal.first", "vocal.mid", "vocal.last", "vocal.test", "vocal.post")) +
+                              scale_fill_manual( values=c("darkslategray4", "darkslategray4","darkslategray4","darkseagreen4","darkslategray4" ))
 p<- p + labs(x="Stage of playback", y="# of calls produced in 10s of playback", title="Vocal responses to playback")
 p      
 ```
@@ -275,18 +300,13 @@ wilcox.test(gc_seq$visual.test, gc_seq$habit_avg_vis, alternative="greater", pai
 
 ```
 
-Vocal response: W = 28, p-value = 0.01125 (G.C. found T=14, N=8, P= 0.016)
-Visual response: W = 29, p-value = 0.07442 (G.C. found T=14, P= 0.016)
+Vocal response: V = 55, p-value = 0.002945 (G.C. found T=49, N=8, P= 0.005))
+Visual response: V = 91, p-value = 0.0008308 (G.C. found T=49, P= 0.003)
 
 
-Unclear why these values are different-- they aren't more similar when run unmatched.
+Values may be different because they were run in spss, is possible that the formula is a little different. Same general conclusions, though. 
 
 ###Habituation
-I would like to compare the first three variables to see whether bats show evidence of habituation in response to repeated stimulus presentation.
-
-To do this I will run a friedman test to see whether there is a differenence in the responses to the start, middle, and end of the stimulus playback
-
-
 #### Friedman test of vocal responses:
 ```{r}
 #call only the habituation variables:
@@ -294,9 +314,11 @@ seq_m_voc_habit<-seq_m_voc[seq_m_voc$variable == "vocal.first" | seq_m_voc$varia
 seq_m_voc_habit$variable<- factor(seq_m_voc_habit$variable) #needed to redo levels of factor
 
 #run test
-friedman.test(value~variable |subject, data=seq_m_voc_habit)
+friedman.test(value~variable |playback.sequence, data=seq_m_voc_habit)
 
 ```
+Friedman chi-squared = 21.8, df = 2, p-value = 1.846e-05
+
 So, this test found that we can reject the null that all the variables came from the same distribution-- the bats habituated (decreased their response after the first 10s of playback) 
 #### Friedman test of visual responses:
 ```{r}
@@ -305,9 +327,10 @@ seq_m_vis_habit<-seq_m_vis[seq_m_vis$variable == "visual.first" | seq_m_vis$vari
 seq_m_vis_habit$variable<- factor(seq_m_vis_habit$variable) #needed to redo levels of factor
 
 #run test
-friedman.test(value~variable |subject, data=seq_m_vis_habit)
+friedman.test(value~variable |playback.sequence, data=seq_m_vis_habit)
 
 ```
+Friedman chi-squared = 4.85, df = 2, p-value = 0.08848
 This test did not reject the null that the responses to the variables came from the same distribution. This is somewhat surprising, but probably because of the low power of friedman's tests. 
 
 ## Is there a difference between the habituated response and the response to the changed stimulus? 
@@ -321,14 +344,16 @@ wilcox.test(gc_seq$vocal.last, gc_seq$vocal.test, alternative = "less", paired=T
 
 
 ```
-So, bats called significantly more to the new bat calls  than they did to the habituated bat calls. (p=0.1125)
+So, bats called significantly more to the new bat calls  than they did to the habituated bat calls. (p-value = 0.002945)
 #### Visual response
 ```{r, echo=FALSE}
 wilcox.test(gc_seq$visual.last, gc_seq$visual.test, alternative = "less", paired=TRUE)
 
 
 ```
-Bats also physically responded significantly more to the new bat calls than the habituated ones. (p=0.1125)
+Bats also physically responded significantly more to the new bat calls than the habituated ones. (p-value = 0.0008281)
 
-Because these are significant, it isn't necessary to compare habituated response to the response when the first stimulus was reintroduced (we already have evidence for discrimination)
+Again, because these are significant, it isn't necessary to compare habituated response to the response when the first stimulus was reintroduced (we already have evidence for discrimination)
+
+
 
